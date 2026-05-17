@@ -51,6 +51,13 @@ export function useTaskMutations(socketRef) {
     [dispatch, socketRef]
   );
 
+  const applyServerTask = useCallback(
+    (task) => {
+      if (task) dispatch(confirmOptimistic(task));
+    },
+    [dispatch]
+  );
+
   const updateTask = useCallback(
     async (id, changes) => {
       const eventId = uuid();
@@ -61,7 +68,7 @@ export function useTaskMutations(socketRef) {
 
       if (!navigator.onLine) {
         await queueMutation({ type: 'update', taskId: id, payload: changes, eventId });
-        return;
+        return entity ? { ...entity, ...changes } : null;
       }
 
       try {
@@ -106,5 +113,5 @@ export function useTaskMutations(socketRef) {
     [dispatch, socketRef]
   );
 
-  return { createTask, updateTask, deleteTask, addComment };
+  return { createTask, updateTask, deleteTask, addComment, applyServerTask };
 }

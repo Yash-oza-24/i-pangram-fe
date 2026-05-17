@@ -38,7 +38,8 @@ export function DashboardPage() {
 
   const socketRef = useSocket();
   useOfflineSync(socketRef);
-  const { createTask, updateTask, deleteTask, addComment } = useTaskMutations(socketRef);
+  const { createTask, updateTask, deleteTask, addComment, applyServerTask } =
+    useTaskMutations(socketRef);
 
   const { data: usersData } = useQuery({
     queryKey: ['users'],
@@ -200,13 +201,14 @@ export function DashboardPage() {
         </section>
       )}
 
-      <TaskDetail
-        users={users}
-        onUpdate={updateTask}
-        onComment={addComment}
-        onClose={handleCloseDetail}
-        socketRef={socketRef}
-      />
+            <TaskDetail
+              users={users}
+              onUpdate={updateTask}
+              onComment={addComment}
+              onTaskSynced={applyServerTask}
+              onClose={handleCloseDetail}
+              socketRef={socketRef}
+            />
 
       <AddTaskPanel
         open={addOpen}

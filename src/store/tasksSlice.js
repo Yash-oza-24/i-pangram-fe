@@ -40,7 +40,10 @@ const tasksSlice = createSlice({
       }
       const existing = state.entities[id];
       if (existing) {
-        adapter.updateOne(state, { id, changes: { ...changes, _pending: true } });
+        adapter.updateOne(state, {
+          id,
+          changes: { ...changes, _pending: true },
+        });
       }
     },
     revertOptimistic(state, action) {

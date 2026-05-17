@@ -4,13 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import { tasksApi } from '../../api/tasks.js';
 import { tasksSelectors } from '../../store/tasksSlice.js';
+import { useDebouncedTaskPatch } from '../../hooks/useDebouncedTaskPatch.js';
 import { DrawerOverlay } from '../ui/Drawer.jsx';
 import { Button } from '../ui/Button.jsx';
 import { Input, Select, Textarea } from '../ui/Input.jsx';
 import { Avatar } from '../ui/Avatar.jsx';
 import { Badge } from '../ui/Badge.jsx';
 
-export function TaskDetail({ users, onUpdate, onComment, onClose, socketRef }) {
+export function TaskDetail({ users, onUpdate, onComment, onClose, onTaskSynced, socketRef }) {
   const selectedId = useSelector((s) => s.tasks.selectedId);
   const task = useSelector((s) =>
     selectedId ? tasksSelectors.selectById(s, selectedId) : null
@@ -19,6 +20,9 @@ export function TaskDetail({ users, onUpdate, onComment, onClose, socketRef }) {
   const [comment, setComment] = useState('');
   const [subtaskTitle, setSubtaskTitle] = useState('');
   const [activity, setActivity] = useState([]);
+  const [description, setDescription] = useState('');
+
+  const { patch: debouncedPatch, flush: flushPatch } = useDebouncedTaskPatch(onUpdate);
 
   const open = Boolean(selectedId && task);
 
@@ -41,6 +45,14 @@ export function TaskDetail({ users, onUpdate, onComment, onClose, socketRef }) {
     setActivity([]);
   }, [selectedId]);
 
+  useEffect(() => {
+    setDescription(task?.description || '');
+  }, [task?.id, task?.description]);
+
+  const syncFromApi = (updated) => {
+    if (updated) onTaskSynced?.(updated);
+  };
+
   const loadActivity = async () => {
     if (!task) return;
     const { activity: logs } = await tasksApi.activity(task.id);
@@ -49,13 +61,27 @@ export function TaskDetail({ users, onUpdate, onComment, onClose, socketRef }) {
 
   const handleSubtask = async () => {
     if (!subtaskTitle.trim() || !task) return;
-    await tasksApi.addSubtask(task.id, subtaskTitle.trim(), socketRef.current?.id);
+    const { task: updated } = await tasksApi.addSubtask(
+      task.id,
+      subtaskTitle.trim(),
+      socketRef.current?.id
+    );
+    syncFromApi(updated);
     setSubtaskTitle('');
   };
 
   const toggleSubtask = async (subId) => {
     if (!task) return;
-    await tasksApi.toggleSubtask(task.id, subId, socketRef.current?.id);
+    const { task: updated } = await tasksApi.toggleSubtask(
+      task.id,
+      subId,
+      socketRef.current?.id
+    );
+    syncFromApi(updated);
+  };
+
+  const handleDescriptionBlur = () => {
+    flushPatch(task.id);
   };
 
   if (!open) return null;
@@ -95,7 +121,10 @@ export function TaskDetail({ users, onUpdate, onComment, onClose, socketRef }) {
             </div>
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                flushPatch(task.id);
+                onClose();
+              }}
               className="drawer-close-btn shrink-0"
               aria-label="Close"
             >
@@ -108,8 +137,13 @@ export function TaskDetail({ users, onUpdate, onComment, onClose, socketRef }) {
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <Textarea
               label="Description"
-              value={task.description || ''}
-              onChange={(e) => onUpdate(task.id, { description: e.target.value })}
+              value={description}
+              onChange={(e) => {
+                const value = e.target.value;
+                setDescription(value);
+                debouncedPatch(task.id, { description: value });
+              }}
+              onBlur={handleDescriptionBlur}
             />
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -210,7 +244,8 @@ export function TaskDetail({ users, onUpdate, onComment, onClose, socketRef }) {
                 onSubmit={async (e) => {
                   e.preventDefault();
                   if (!comment.trim()) return;
-                  await onComment(task.id, comment.trim());
+                  const updated = await onComment(task.id, comment.trim());
+                  syncFromApi(updated);
                   setComment('');
                 }}
               >
