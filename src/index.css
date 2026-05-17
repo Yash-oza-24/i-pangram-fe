@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface: 250 250 252;
+  --surface-raised: 255 255 255;
+  --surface-border: 228 228 235;
+  --ink: 24 24 32;
+  --ink-muted: 100 100 120;
+}
+
+.dark {
+  --surface: 16 16 22;
+  --surface-raised: 26 26 36;
+  --surface-border: 42 42 58;
+  --ink: 245 245 250;
+  --ink-muted: 160 160 180;
+}
+
+body {
+  @apply bg-surface text-ink font-sans min-h-screen;
+}
+
+/* Drawer / modal overlay — no blur, theme-aware tint */
+.drawer-overlay {
+  background-color: rgb(15 23 42 / 0.35);
+}
+
+.dark .drawer-overlay {
+  background-color: rgb(0 0 0 / 0.55);
+}
+
+.drawer-panel {
+  background-color: rgb(var(--surface-raised));
+  border-left: 1px solid rgb(var(--surface-border));
+  box-shadow: -12px 0 40px rgb(15 23 42 / 0.12);
+}
+
+.dark .drawer-panel {
+  box-shadow: -12px 0 40px rgb(0 0 0 / 0.4);
+}
+
+.drawer-header {
+  border-bottom: 1px solid rgb(var(--surface-border));
+  background-color: rgb(var(--surface-raised));
+}
+
+.drawer-footer {
+  border-top: 1px solid rgb(var(--surface-border));
+  background-color: rgb(var(--surface));
+}
+
+.drawer-close-btn {
+  @apply rounded-lg p-2 text-ink-muted transition-colors;
+}
+
+.drawer-close-btn:hover {
+  background-color: rgb(var(--surface-border) / 0.5);
+  color: rgb(var(--ink));
+}
+
+@layer utilities {
+  .priority-high {
+    @apply border-l-4 border-l-rose-500;
+  }
+  .priority-medium {
+    @apply border-l-4 border-l-amber-400;
+  }
+  .priority-low {
+    @apply border-l-4 border-l-emerald-400;
+  }
+}
